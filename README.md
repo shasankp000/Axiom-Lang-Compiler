@@ -8,3 +8,5 @@ The goal (at the moment) is not to compete with existing languages, but to under
 The specifications of the language (hence influencing the design of the compiler) are specified so far in docs/Language Specifications.md.
 
 version: 0.1
+
+The code for this compiler is 100% human-written code.
