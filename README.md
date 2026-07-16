@@ -9,4 +9,4 @@ The specifications of the language (hence influencing the design of the compiler
 
 version: 0.1
 
-The code for this compiler is 100% human-written code.
+The code for this compiler is 100% human-written code, while I have used sources such as my own university notes on compiler design from https://cse-engineering-notes.netlify.app/ and also by learning from AI, as I am making this project while learning on the go.
