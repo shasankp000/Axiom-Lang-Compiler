@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include "memory_pool.h"
 #include "lexer_token.h"
+#include "keywords.h"
+
 // #include <ctype.h>
 
 /*
@@ -70,7 +72,9 @@ void fill_pool(struct MemoryPool *memory_pool) {
     memory_pool->slots[i].node.c = '\0';
     memory_pool->slots[i].node.token = PURPOSELY_NOT_DEFINED;
     memory_pool->slots[i].node.largetoken = PURPOSELY_UNDEFINED;
-
+    memory_pool->slots[i].node.keyword = NULL_KEYWORD;
+    memory_pool->slots[i].node.keyword_type = PURPOSELY_UNDEFINED_KEYWORD;
+    
     if (i == memory_pool->pool_size-1) {
       // at the last node.
       memory_pool->slots[i].node.next = NULL;
