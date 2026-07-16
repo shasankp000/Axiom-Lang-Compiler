@@ -1,0 +1,463 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<ctype.h>
+#include "lexer_token.h"
+#include "lexer_node.h"
+#include "lexer.h"
+// #include "memory_pool.h"
+
+/*
+// an enumeration is the perfect way to define a token.
+enum TOKEN {
+  ALPHABET,
+  DIGIT,
+  PUNCTUATION,
+  WHITESPACE,
+  OPERATOR,
+  INVALID,
+};
+
+// the LargeTOKEN will be applied after the initial round of 1:1 character:token mapping is done
+enum LargeTOKEN {
+  WORD,
+  IDENTIFIER,
+  KEYWORD,
+  DELIMITER,
+  NUMBER,
+  PURPOSELY_UNDEFINED,
+  ILLEGAL
+};
+*/
+
+enum TOKEN assign_token(char input){
+
+// the biggest problem in this dang function was to figure out
+// how do I pass something like a generic input type?
+// void* input was part of the solution, but I didn't want to dive too deep into complicated solutions,
+// so I came up with this:
+// okay, it just reads input chars, not anything truly generic.
+// just changing input type to char input does the job here.
+
+  enum TOKEN token = INVALID;
+
+  if ((isalpha(input))) {
+    token = ALPHABET;
+  }
+  if (isdigit(input)) {
+    token = DIGIT;
+  }
+  if (ispunct(input)) {
+    token = PUNCTUATION;
+  }
+  if (ispunct(input)) {
+    if (input == '+' || input == '-' || input == '/' || input == '*') {
+      token = OPERATOR;
+    }
+  }
+  if (isspace(input)) {
+    token = WHITESPACE;
+  }
+
+  return token;
+}
+
+void print_token(enum TOKEN token) {
+  switch(token) {
+    case ALPHABET:
+      printf("TOKEN: ALPHABET \n");
+      break;
+    case DIGIT:
+      printf("TOKEN: DIGIT \n");
+      break;
+    case PUNCTUATION:
+      printf("TOKEN: PUNCTUATION \n");
+      break;
+    case OPERATOR:
+      printf("TOKEN: OPERATOR \n");
+      break;
+    case WHITESPACE:
+      printf("TOKEN: WHITESPACE \n");
+      break;
+    case INVALID:
+      printf("TOKEN: INVALID \n");
+      break;
+    default:
+      printf("TOKEN: INVALID \n");
+      break;
+  }
+}
+
+void print_large_token(enum LargeTOKEN token) {
+  switch(token) {
+    case WORD:
+      printf("LARGE TOKEN: WORD \n");
+      break;
+    case IDENTIFIER:
+      printf("LARGE TOKEN: IDENTIFER \n");
+      break;
+    case KEYWORD:
+      printf("LARGE TOKEN: KEYWORD \n");
+      break;
+    case NUMBER:
+      printf("LARGE TOKEN: NUMBER \n");
+      break;
+    case DELIMITER:
+      printf("LARGE TOKEN: DELIMITER \n");
+      break;
+    case PURPOSELY_UNDEFINED:
+      printf("LARGE TOKEN: PURPOSELY_UNDEFINED \n");
+      break;
+    case ILLEGAL:
+      printf("LARGE TOKEN: ILLEGAL \n");
+      break;
+    default:
+      printf("LARGE TOKEN: ILLEGAL \n");
+      break;
+  }
+}
+
+// time to represent the connection with tokens in a meaningful way now.
+// Yes it will be a bi-directional linked list (I forgot the proper industry term)
+
+/*
+struct LexerNode {
+  char c;
+  int index;
+  enum TOKEN token;
+  enum LargeTOKEN largetoken;
+  struct LexerNode* next;
+  struct LexerNode* prev;
+};
+*/
+
+
+void assign_large_token(struct LexerNode* head) {
+   enum LargeTOKEN token = ILLEGAL;
+   struct LexerNode* temp = head;
+   struct LexerNode* lexeme_start = NULL;
+   int digit_occurrence = 0;
+   int alphabet_occurence = 0;
+   int start_index = 0;
+   int current_index = 0;
+   int first_char_is_digit = 0;
+   lexeme_start = temp;
+
+  printf("Before while loop....\n");
+   while (temp!=NULL) {
+
+    // for ILLEGAL identifiers:
+    if (lexeme_start->token == DIGIT) {
+      first_char_is_digit = 1;
+    }
+
+    // only check if a LexerNode's token is a number or not this would mean that within the alphabets there is some number somewhere mixed up, so that lexeme would become an IDENTIFIER.
+    if (temp->token == DIGIT) {
+      digit_occurrence+=1;
+    }
+    if (temp->token == ALPHABET) {
+      alphabet_occurence+=1;
+    }
+
+//    printf("Digit occurrence: %d \n", digit_occurrence);
+//    printf("Alphabet occurrence: %d \n", alphabet_occurence);
+
+    if (temp->token == WHITESPACE || temp->token == PUNCTUATION || temp->token == OPERATOR) {
+      // delimiter reached.
+      temp->largetoken = DELIMITER;
+      while(lexeme_start!=temp) {
+
+        if (digit_occurrence > 0 && alphabet_occurence > 0) {
+            if (first_char_is_digit) {
+              lexeme_start->largetoken = ILLEGAL;
+            }
+            else {
+              lexeme_start->largetoken = IDENTIFIER;
+            }
+        }
+        else if (alphabet_occurence > 0 && digit_occurrence==0) {
+            lexeme_start->largetoken = WORD;
+        }
+        else if (digit_occurrence > 0 && alphabet_occurence==0) {
+            lexeme_start->largetoken = NUMBER;
+        }
+        else {
+          lexeme_start->largetoken = ILLEGAL;
+        }
+
+        if (lexeme_start->next == temp) {
+          // right at the end of lexeme.
+
+          if (digit_occurrence > 0 && alphabet_occurence > 0) {
+            if (first_char_is_digit) {
+              lexeme_start->largetoken = ILLEGAL;
+            }
+            else {
+              lexeme_start->largetoken = IDENTIFIER;
+            }
+          }
+          else if (alphabet_occurence > 0 && digit_occurrence==0) {
+            lexeme_start->largetoken = WORD;
+          }
+          else if (digit_occurrence > 0 && alphabet_occurence==0) {
+            lexeme_start->largetoken = NUMBER;
+          }
+          else {
+            lexeme_start->largetoken = ILLEGAL;
+          }
+
+          lexeme_start = temp;
+          digit_occurrence = 0; // reset the counter for the next lexeme
+          alphabet_occurence = 0;
+          first_char_is_digit = 0;
+          break;
+        }
+        lexeme_start = lexeme_start->next;
+      }
+     // now we push the lexeme_start past the delimiter, to the next lexeme's start.
+     lexeme_start = temp->next;
+    }
+    temp = temp->next;
+ }
+
+// adding an edge case detection. What if there is no delimiter at the end of the input to trigger the inner loop for the second or in this case, the very last lexeme??
+// This means that temp is already at NULL, so we can't use temp.
+// But lexeme_start is still sitting at a real LexerNode.
+// All we need to do is to keep walk from lexeme_start to NULL, and tag all LexerNodes along the way.
+// This is a one-time cleanup after the main loop has already run, and it already has logged if the last lexeme is an IDENTIFIER or WORD, via the counter variable.
+
+if (lexeme_start!=NULL) {
+  while (lexeme_start!=NULL) {
+    if (digit_occurrence > 0 && alphabet_occurence > 0) {
+      if (first_char_is_digit) {
+        lexeme_start->largetoken = ILLEGAL;
+      }
+      else {
+        lexeme_start->largetoken = IDENTIFIER;
+      }
+    }
+    else if (alphabet_occurence > 0 && digit_occurrence==0) {
+      lexeme_start->largetoken = WORD;
+    }
+    else if (digit_occurrence > 0 && alphabet_occurence==0) {
+      lexeme_start->largetoken = NUMBER;
+    }
+    else {
+      lexeme_start->largetoken = ILLEGAL;
+    }
+      lexeme_start = lexeme_start->next;
+    }
+    digit_occurrence = 0; // not needed at this juncture, but still.
+    alphabet_occurence = 0;
+    first_char_is_digit = 0;
+  }
+}
+
+// this method will try to pretty-print.
+void recognize(struct LexerNode* head) {
+  // following similar logic as assign_large_token
+
+  struct LexerNode* temp = head;
+  struct LexerNode* lexeme_start = temp;
+
+  while (temp!=NULL) {
+    // start looping till a DELIMITER is reached.
+
+    if (temp->largetoken == DELIMITER) {
+      while (lexeme_start!=temp) {
+        printf("%c", lexeme_start->c); // keep printing characters without newline.
+        // once the last character has been printed.
+        if (lexeme_start->next == temp) {
+          printf("\t\t --> \t\t");
+          print_large_token(lexeme_start->largetoken); // this is automatically print a newline too.
+         }
+        lexeme_start = lexeme_start->next;
+      }
+      // now we print the delimiter as well.
+      if (temp->token!=OPERATOR) {
+        printf("%c", temp->c);
+        printf("\t\t --> \t\t");
+        print_large_token(temp->largetoken);
+      }
+      else{
+        printf("%c", temp->c);
+        printf("\t\t --> \t\t");
+        print_token(temp->token);
+      }
+      // now we push the lexeme_start past the delimiter, to the next lexeme's start.
+      lexeme_start = temp->next;
+    }
+    temp = temp->next;
+  }
+
+// applying same edge case as assign_large_token here too.
+
+
+if (lexeme_start!=NULL) {
+  while (lexeme_start!=NULL) {
+    printf("%c", lexeme_start->c); // keep printing characters without newline.
+    // once the last character has been printed.
+    if (lexeme_start->next == temp) {
+      printf("\t\t --> \t\t");
+      print_large_token(lexeme_start->largetoken); // this is automatically print a newline too.
+    }
+      lexeme_start = lexeme_start->next;
+    }
+  }
+}
+
+/*
+
+int main() {
+  int buf_size = 0;
+  int collect_size = 0;
+  char *lexical_buffer;
+
+  printf("Hello world! \n");
+
+  // great, I have managed to write hello world, now what?
+  // If I remember correctly from my notes, the first part of compiler design was lexical-something something handling
+  // In very simple terms: Hello World -> each letter and whitespace are considered "tokens".
+  // now I need to translate that to C somehow.
+  // I have forgotten how to take in user inputs in C, so let me look that up first.
+  // So standard input usually works with scanf, and for %s strings, it reads right up to the first whitespace.
+  // So for multi-spaced strings I need to use fgets, and define a fixed array of characters to store the string in, the size of which shall be passed into fgets as well.
+  // Okay, enough comments, let's do this.
+
+  printf("Enter size of lexical buffer: ");
+  scanf("%d", &buf_size);
+  // so, it turns out that scanf only consumes the integers as per %d, and pressing the enter key generates a \n char in the stdin buffer that's left to consumed by fgets()
+  // to tackle this problem we need to use getchar() to remove exactly one char from the stdin stream, and this removes the leftover \n in the stdin stream.
+  getchar();
+
+  lexical_buffer = (char *) malloc(buf_size * sizeof(char));
+
+  // now we have a dynamically defined buffer to store characters inside it.
+
+ // printf("%zu \n", sizeof(lexical_buffer));
+ // printf("%d \n", buf_size);
+
+  printf("Enter string: ");
+  fgets(lexical_buffer, buf_size, stdin);
+  printf("\n");
+
+  printf("Entered string: %s \n", lexical_buffer);
+
+  // now let's walk the buffer, print out all the characters with it's indexes.
+  // a linkedlist here would be nice.
+  // or I can use a far simpler approach, which may appear a bit rudimentary.
+  // after repeated mistakes and debugging, I found out how to detect alphanumeric, punctuations and whitespaces in C.
+  // Let's first "collect" the length of the string we entered.
+
+  for (int i = 0; i<buf_size; i++) {
+     if(isalnum((unsigned char) lexical_buffer[i]) || isblank((unsigned char) lexical_buffer[i]) || ispunct((unsigned char) lexical_buffer[i]) ) {
+       printf("Collecting: %c \n", lexical_buffer[i]);
+       collect_size+=1;
+     }
+     else {
+       printf("Reached end of valid characters/whitespaces, breaking...\n");
+       break;
+     }
+  }
+
+  // this way we don't have to traverse the remaining empty buffer.
+  // now we can just:
+
+  for (int i=0; i<collect_size; i++) {
+    printf("%d : %c \n", i, lexical_buffer[i]);
+  }
+
+  // Now, I am aware that this second loop is redundant and the whole action could have been done in one single loop, but
+  // I will keep this code, because it is my own original thinking, even if it is redundant.
+
+  // At this juncture, the code can assign indexes to the string stored in the buffer,
+  // but there is no "ontological" relationship between the letters,
+  // there is no guarantee, that H->e->l->l->o->,->" "->W->o->r->l->d->!
+  // We need to fix that. And this is where I believe linked lists may help us.
+  // Actually, scratch that. Arrays already give me what I am asking for.
+  // What I instead need, are semantics, some way to encode, what the heck is H, or a comma, or an exclamation mark.
+  // This is where tokens come in.
+  // And turns out I can integrate linked lists after all.
+  // After nearly 4 hours of coding, I am replacing the linkedlist implementation
+  // with a custom MemoryPool that is physically an array, but logically a doubly-linked list.
+  // Did this so that the lexer becomes significantly faster as the CPU and cache love contiguous memory blocks.
+
+    // now we create the memory pool based on collect_size
+  
+  struct MemoryPool *memory_pool = malloc(sizeof(struct MemoryPool)); 
+
+  if (memory_pool == NULL) {
+    printf("Error in allocating memory for the allocator object! \n");
+    return 1;
+  }
+
+  memory_pool->pool_size = collect_size;
+  memory_pool->cursor_val = 0;  
+  memory_pool->slots = calloc(memory_pool->pool_size, sizeof(struct PoolSlot));
+
+  if (memory_pool->slots == NULL) {
+    printf("Error in allocating memory for the memory pool slot! \n");
+    return 1;
+  }
+
+  // now we fill the pool with initial dummy characters
+
+  fill_pool(memory_pool);
+
+  // now we actually fill the pool with the correct characters using allocate();
+
+  for (int i=0; i<memory_pool->pool_size; i++) {
+    allocate(memory_pool, lexical_buffer[i]);
+  }
+
+  // now it's time to put a node at each one of the slots and then connect the nodes.
+
+  // 0 means unallocated, 1 means allocated.
+ 
+  // now let's design an allocate method where the allocator automatically 
+  // it will be simple.
+  // call allocate()
+  // mark one free slot as USED.
+  // left to right only, like a tape head reading a tape on a circular platter.
+
+  // assign single-character tokens
+  printf("Assigning single character tokens... \n");
+  for (int i=0; i<memory_pool->pool_size; i++) {
+    memory_pool->slots[i].node.token = assign_token(memory_pool->slots[i].node.c);
+  } 
+
+  // assign large tokens
+  printf("Assigning large tokens.... \n");
+  assign_large_token(&memory_pool->slots[0].node);
+  printf("Large token assignment complete\n");
+
+  // traversal
+
+  struct LexerNode* current = &memory_pool->slots[0].node;
+  while (current->next!=NULL) {
+    printf("Index: %d \n", current->index);
+    printf("Character: %c \n", current->c);
+    print_token(current->token);
+    print_large_token(current->largetoken);
+
+    current = current->next;
+
+    if (current->next==NULL) {
+      // reached last LexerNode
+      printf("Index: %d \n", current->index);
+      printf("Character: %c \n", current->c);
+      print_token(current->token);
+      print_large_token(current->largetoken);
+    }
+  }
+
+  // pretty-print
+
+  recognize(&memory_pool->slots[0].node);
+  
+  free(memory_pool->slots);
+  free(memory_pool);
+  free(lexical_buffer);
+  
+  return 0;
+}
+*/
