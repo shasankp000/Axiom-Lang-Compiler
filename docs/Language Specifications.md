@@ -53,6 +53,9 @@ The language is designed to:
 
 > The `IDENTIFIER` size limit simplifies the first implementation of the compiler. The limit may be relaxed in future revisions.
 
+
+More lexical rules regarding keywords and types defined in [[axiom-spec-notes-v0.1]].
+
 ---
 ## 3. Syntax Rules
 
