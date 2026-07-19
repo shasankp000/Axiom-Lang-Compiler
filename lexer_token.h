@@ -20,10 +20,7 @@ enum LargeTOKEN {
   DELIMITER,
   NUMBER,
   STRING_LITERAL, // a literal string, as literal as it gets, lol.
-
-  SINGLE_LINE_COMMENT,
-  MULTI_LINE_COMMENT,
-  
+  COMMENT,  
   PURPOSELY_UNDEFINED,
   ILLEGAL
 };

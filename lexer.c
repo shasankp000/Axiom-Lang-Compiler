@@ -110,6 +110,12 @@ void print_large_token(enum LargeTOKEN token) {
     case ILLEGAL:
       printf("LARGE TOKEN: ILLEGAL \n");
       break;
+    case STRING_LITERAL:
+      printf("LARGE TOKEN: STRING LITERAL \n");
+      break;
+    case COMMENT:
+      printf("LARGE TOKEN: COMMENT \n");
+      break;
     default:
       printf("LARGE TOKEN: ILLEGAL \n");
       break;
@@ -130,27 +136,79 @@ struct LexerNode {
 };
 */
 
-
 void assign_large_token(struct LexerNode* head) {
    enum LargeTOKEN token = ILLEGAL;
    struct LexerNode* temp = head;
    struct LexerNode* lexeme_start = NULL;
+   struct LexerNode* comment_start = NULL;
    int digit_occurrence = 0;
    int alphabet_occurence = 0;
    int start_index = 0;
    int current_index = 0;
    int first_char_is_digit = 0;
+   int comment_start_detected = 0;
+   int comment_end_detected = 0;
    lexeme_start = temp;
 
   printf("Before while loop....\n");
-   while (temp!=NULL) {
+  while (temp!=NULL) {
 
     // for ILLEGAL identifiers:
     if (lexeme_start->token == DIGIT) {
       first_char_is_digit = 1;
     }
 
-    // only check if a LexerNode's token is a number or not this would mean that within the alphabets there is some number somewhere mixed up, so that lexeme would become an IDENTIFIER.
+    // comment detection (/* ... */)
+    if (temp->token == OPERATOR && temp->c == '/' &&
+        temp->next != NULL && temp->next->token == OPERATOR && temp->next->c == '*') {
+
+      comment_start_detected = 1;
+      comment_end_detected = 0;
+      comment_start = temp; // remember exactly where the comment began
+
+      temp = temp->next->next; // move past the opening /*
+
+      while (temp != NULL) {
+        if (temp->token == OPERATOR && temp->c == '*' &&
+            temp->next != NULL && temp->next->token == OPERATOR && temp->next->c == '/') {
+          comment_end_detected = 1;
+          break; // temp is now sitting on the closing '*'
+        }
+        temp = temp->next;
+      }
+
+      if (comment_start_detected && comment_end_detected) {
+        // confirmed fully-enclosed comment - now tag every node from
+        // comment_start through the closing '/' (inclusive).
+        while (comment_start != temp) {
+          comment_start->largetoken = COMMENT;
+          comment_start = comment_start->next;
+        }
+        comment_start->largetoken = COMMENT;      // the closing '*'
+        comment_start->next->largetoken = COMMENT; // the closing '/'
+
+        temp = comment_start->next->next; // advance past the closing */
+      }
+      else {
+        // unterminated comment: temp ran off the end (NULL) without
+        // finding a closing */. Mark whatever was scanned ILLEGAL.
+        while (comment_start != NULL) {
+          comment_start->largetoken = ILLEGAL;
+          comment_start = comment_start->next;
+        }
+        temp = NULL;
+      }
+
+      comment_start_detected = 0;
+      comment_end_detected = 0;
+      lexeme_start = temp; // resync - nothing left open from before the comment
+      digit_occurrence = 0;
+      alphabet_occurence = 0;
+      first_char_is_digit = 0;
+      continue; // skip the rest of this iteration; temp already advanced
+    }
+
+    // only check if a LexerNode's token is a number or not - this would mean that within the alphabets there is some number somewhere mixed up, so that lexeme would become an IDENTIFIER.
     if (temp->token == DIGIT) {
       digit_occurrence+=1;
     }
@@ -158,12 +216,10 @@ void assign_large_token(struct LexerNode* head) {
       alphabet_occurence+=1;
     }
 
-//    printf("Digit occurrence: %d \n", digit_occurrence);
-//    printf("Alphabet occurrence: %d \n", alphabet_occurence);
-
     if (temp->token == WHITESPACE || temp->token == PUNCTUATION || temp->token == OPERATOR) {
       // delimiter reached.
-      temp->largetoken = DELIMITER;
+       temp->largetoken = DELIMITER;
+
       while(lexeme_start!=temp) {
 
         if (digit_occurrence > 0 && alphabet_occurence > 0) {
@@ -219,11 +275,11 @@ void assign_large_token(struct LexerNode* head) {
     temp = temp->next;
  }
 
-// adding an edge case detection. What if there is no delimiter at the end of the input to trigger the inner loop for the second or in this case, the very last lexeme??
-// This means that temp is already at NULL, so we can't use temp.
-// But lexeme_start is still sitting at a real LexerNode.
-// All we need to do is to keep walk from lexeme_start to NULL, and tag all LexerNodes along the way.
-// This is a one-time cleanup after the main loop has already run, and it already has logged if the last lexeme is an IDENTIFIER or WORD, via the counter variable.
+  // adding an edge case detection. What if there is no delimiter at the end of the input to trigger the inner loop for the second or in this case, the very last lexeme??
+  // This means that temp is already at NULL, so we can't use temp.
+  // But lexeme_start is still sitting at a real LexerNode.
+  // All we need to do is to keep walk from lexeme_start to NULL, and tag all LexerNodes along the way.
+  // This is a one-time cleanup after the main loop has already run, and it already has logged if the last lexeme is an IDENTIFIER or WORD, via the counter variable.
 
 if (lexeme_start!=NULL) {
   while (lexeme_start!=NULL) {
@@ -259,50 +315,67 @@ void recognize(struct LexerNode* head) {
   struct LexerNode* temp = head;
   struct LexerNode* lexeme_start = temp;
 
-  while (temp!=NULL) {
-    // start looping till a DELIMITER is reached.
+  if (lexeme_start->largetoken == COMMENT) {
+      while (temp!=NULL) {
+          // print out all the characters without a newline
+          printf("%c", temp->c);
 
-    if (temp->largetoken == DELIMITER) {
-      while (lexeme_start!=temp) {
+          if (temp->next == NULL) {
+              // last character has been printed
+              printf("\t\t --> \t\t");
+              print_large_token(lexeme_start->largetoken); // this is automatically print a newline too.
+          }
+
+          temp = temp->next;
+      }
+  }
+  else {
+      while (temp!=NULL) {
+        // start looping till a DELIMITER is reached.
+
+        if (temp->largetoken == DELIMITER) {
+          while (lexeme_start!=temp) {
+            printf("%c", lexeme_start->c); // keep printing characters without newline.
+            // once the last character has been printed.
+            if (lexeme_start->next == temp) {
+              printf("\t\t --> \t\t");
+              print_large_token(lexeme_start->largetoken); // this is automatically print a newline too.
+             }
+            lexeme_start = lexeme_start->next;
+          }
+          // now we print the delimiter as well.
+          if (temp->token!=OPERATOR) {
+            printf("%c", temp->c);
+            printf("\t\t --> \t\t");
+            print_large_token(temp->largetoken);
+          }
+          else{
+            printf("%c", temp->c);
+            printf("\t\t --> \t\t");
+            print_token(temp->token);
+          }
+          // now we push the lexeme_start past the delimiter, to the next lexeme's start.
+          lexeme_start = temp->next;
+        }
+        temp = temp->next;
+      }
+
+    // applying same edge case as assign_large_token here too.
+
+
+    if (lexeme_start!=NULL) {
+      while (lexeme_start!=NULL) {
         printf("%c", lexeme_start->c); // keep printing characters without newline.
         // once the last character has been printed.
         if (lexeme_start->next == temp) {
           printf("\t\t --> \t\t");
           print_large_token(lexeme_start->largetoken); // this is automatically print a newline too.
-         }
-        lexeme_start = lexeme_start->next;
+        }
+          lexeme_start = lexeme_start->next;
+        }
       }
-      // now we print the delimiter as well.
-      if (temp->token!=OPERATOR) {
-        printf("%c", temp->c);
-        printf("\t\t --> \t\t");
-        print_large_token(temp->largetoken);
-      }
-      else{
-        printf("%c", temp->c);
-        printf("\t\t --> \t\t");
-        print_token(temp->token);
-      }
-      // now we push the lexeme_start past the delimiter, to the next lexeme's start.
-      lexeme_start = temp->next;
-    }
-    temp = temp->next;
   }
 
-// applying same edge case as assign_large_token here too.
-
-
-if (lexeme_start!=NULL) {
-  while (lexeme_start!=NULL) {
-    printf("%c", lexeme_start->c); // keep printing characters without newline.
-    // once the last character has been printed.
-    if (lexeme_start->next == temp) {
-      printf("\t\t --> \t\t");
-      print_large_token(lexeme_start->largetoken); // this is automatically print a newline too.
-    }
-      lexeme_start = lexeme_start->next;
-    }
-  }
 }
 
 /*
@@ -382,8 +455,8 @@ int main() {
   // Did this so that the lexer becomes significantly faster as the CPU and cache love contiguous memory blocks.
 
     // now we create the memory pool based on collect_size
-  
-  struct MemoryPool *memory_pool = malloc(sizeof(struct MemoryPool)); 
+
+  struct MemoryPool *memory_pool = malloc(sizeof(struct MemoryPool));
 
   if (memory_pool == NULL) {
     printf("Error in allocating memory for the allocator object! \n");
@@ -391,7 +464,7 @@ int main() {
   }
 
   memory_pool->pool_size = collect_size;
-  memory_pool->cursor_val = 0;  
+  memory_pool->cursor_val = 0;
   memory_pool->slots = calloc(memory_pool->pool_size, sizeof(struct PoolSlot));
 
   if (memory_pool->slots == NULL) {
@@ -412,8 +485,8 @@ int main() {
   // now it's time to put a node at each one of the slots and then connect the nodes.
 
   // 0 means unallocated, 1 means allocated.
- 
-  // now let's design an allocate method where the allocator automatically 
+
+  // now let's design an allocate method where the allocator automatically
   // it will be simple.
   // call allocate()
   // mark one free slot as USED.
@@ -423,7 +496,7 @@ int main() {
   printf("Assigning single character tokens... \n");
   for (int i=0; i<memory_pool->pool_size; i++) {
     memory_pool->slots[i].node.token = assign_token(memory_pool->slots[i].node.c);
-  } 
+  }
 
   // assign large tokens
   printf("Assigning large tokens.... \n");
@@ -453,11 +526,11 @@ int main() {
   // pretty-print
 
   recognize(&memory_pool->slots[0].node);
-  
+
   free(memory_pool->slots);
   free(memory_pool);
   free(lexical_buffer);
-  
+
   return 0;
 }
 */
