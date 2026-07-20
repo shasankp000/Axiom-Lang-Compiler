@@ -141,6 +141,7 @@ void assign_large_token(struct LexerNode* head) {
    struct LexerNode* temp = head;
    struct LexerNode* lexeme_start = NULL;
    struct LexerNode* comment_start = NULL;
+   struct LexerNode* string_start = NULL;
    int digit_occurrence = 0;
    int alphabet_occurence = 0;
    int start_index = 0;
@@ -148,6 +149,8 @@ void assign_large_token(struct LexerNode* head) {
    int first_char_is_digit = 0;
    int comment_start_detected = 0;
    int comment_end_detected = 0;
+   int string_literal_start_detected = 0;
+   int string_literal_end_detected = 0;
    lexeme_start = temp;
 
   printf("Before while loop....\n");
@@ -202,6 +205,56 @@ void assign_large_token(struct LexerNode* head) {
       comment_start_detected = 0;
       comment_end_detected = 0;
       lexeme_start = temp; // resync - nothing left open from before the comment
+      digit_occurrence = 0;
+      alphabet_occurence = 0;
+      first_char_is_digit = 0;
+      continue; // skip the rest of this iteration; temp already advanced
+    }
+
+    
+    // string literal detection (" ... ")
+    if (temp->token == PUNCTUATION && temp->c == '"') {
+
+      string_literal_start_detected = 1;
+      string_literal_end_detected = 0;
+      string_start = temp; // remember exactly where the string began
+
+      temp = temp->next; // move past the opening "
+
+      while (temp != NULL) {
+        if (temp->token == PUNCTUATION && temp->c == '"') {
+          string_literal_end_detected = 1;
+          break; // temp is now sitting on the closing '"'
+        }
+        temp = temp->next;
+      }
+
+      if (string_literal_start_detected && string_literal_end_detected) {
+        // confirmed fully-enclosed string - now tag every node from
+        // string_start through the closing '"' (inclusive).
+        while (string_start != temp) {
+          string_start->largetoken = STRING_LITERAL;
+          string_start = string_start->next;
+        }
+        string_start->largetoken = STRING_LITERAL;      // the closing '"'
+
+        temp = string_start->next; // advance past the closing "
+      }
+      else {
+        // unterminated string: temp ran off the end (NULL) without
+        // finding a closing ". Mark whatever was scanned ILLEGAL.
+        while (string_start != NULL) {
+          string_start->largetoken = ILLEGAL;
+          string_start = string_start->next;
+        }
+        temp = NULL;
+      }
+
+      string_literal_start_detected = 0;
+      string_literal_end_detected = 0;
+      comment_start_detected = 0;
+      comment_end_detected = 0;
+      lexeme_start = temp; // resync - nothing left open from before the string
       digit_occurrence = 0;
       alphabet_occurence = 0;
       first_char_is_digit = 0;

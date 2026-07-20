@@ -122,10 +122,7 @@ Flagged during discussion, **not yet built**:
   lexemes (delimiter `"`, word `Hello`, punctuation `!`, delimiter `"`),
   not one string literal.
   
-- String literals need a **distinct scanning mode**: once an opening `"`
-  is seen, consume characters verbatim (including characters that would
-  normally act as delimiters) until a matching closing `"` is found: the
-  whole span becomes one `STRING_LITERAL` lexeme.
+- String literals supported has been added, (check section 6c).
   
 - This is a different algorithm shape from the current delimiter-driven
   `assign_large_token` walk -- likely needs its own function (e.g.
@@ -233,13 +230,29 @@ This works both for single line as well as multi-line comments.
 
 The single line comment type of `//` is not yet supported because of implementation constraints, which is why the earlier design decision of keeping two separate large tokens of `SINGLE_LINE_COMMENT` and `MULTI_LINE_COMMENT` have been collapsed to just `COMMENT` with `/*  */`, opening and closing comment markers as the lexer will treat anything in between these markers as a valid comment.
 
+### 6c. `STRING_LITERAL`: String literal detection support added.
+
+Axiom currently supports basic string literals (no escape sequence detection added yet).
+
+```c
+"This is a valid string literal in Axiom"
+```
+
+This however, will not work yet
+
+```c
+"This \\type\\ of string is \"not\" supported yet".
+```
+
+The escape sequences are not supported yet in `v0.1`, those are deferred for later versions.
+
 ---
 
 ## 7. Deliberately deferred / out of scope for v0.1
 
 - `byte` type (raw byte manipulation)
 - Unsigned integer types
-- String literal lexing (designed, not implemented -- see Section 4)
+- String literal escape sequences (see section 6c)
 - Compiler diagnostic hints (designed, not implemented -- see Section 3)
 - Keyword-length-cap exceptions (currently unneeded -- `true`, `false`,
   `bool`, `NONE` all fit `<=5` as-is; see Section 1/2 notes)
