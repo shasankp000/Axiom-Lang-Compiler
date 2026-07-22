@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <stdlib.h>
+// #include <stdlib.h>
 #include "memory_pool.h"
 #include "lexer_token.h"
 #include "keywords.h"
@@ -17,7 +17,7 @@ struct Node {
 struct PoolSlot {
   int slot_index;
   int in_use;
-  struct Node node;  
+  struct Node node;
 };
 
 struct MemoryPool {
@@ -44,12 +44,12 @@ void allocate(struct MemoryPool *mem_pool, char c) {
   if (mem_pool->cursor_val >= mem_pool->pool_size) {
     mem_pool->cursor_val = 0; // wrap around to the first slot if cursor reached the end of the current pool.
   }
-  
+
   if (mem_pool->slots[mem_pool->cursor_val].in_use == 0) { // if free
       mem_pool->slots[mem_pool->cursor_val].in_use = 1; // then allocate
       mem_pool->slots[mem_pool->cursor_val].node.c = c;
   }
- 
+
   mem_pool->cursor_val+=1;  // increment cursor to track the next slot.
   // easy peasy lemon squeezy (Yes I played Counter-Strike).
 }
@@ -60,11 +60,11 @@ void release(struct MemoryPool *mem_pool, int free_location) {
       mem_pool->slots[free_location].in_use = 0; // then free
       mem_pool->slots[free_location].node.c = '\0';
       // easy peasy lemon squeezy (Yes I played Counter-Strike).
-   } 
+   }
 }
 
 void fill_pool(struct MemoryPool *memory_pool) {
-  
+
   for (int i=0; i<memory_pool->pool_size; i++) {
     memory_pool->slots[i].slot_index = i;
     memory_pool->slots[i].in_use = 0; // set all slots to free initially.
@@ -74,13 +74,13 @@ void fill_pool(struct MemoryPool *memory_pool) {
     memory_pool->slots[i].node.largetoken = PURPOSELY_UNDEFINED;
     memory_pool->slots[i].node.keyword = NULL_KEYWORD;
     memory_pool->slots[i].node.keyword_type = PURPOSELY_UNDEFINED_KEYWORD;
-    
+
     if (i == memory_pool->pool_size-1) {
       // at the last node.
       memory_pool->slots[i].node.next = NULL;
     }
     else {
-      memory_pool->slots[i].node.next = &memory_pool->slots[i+1].node;      
+      memory_pool->slots[i].node.next = &memory_pool->slots[i+1].node;
     }
 
     if (i == 0) {
@@ -89,7 +89,7 @@ void fill_pool(struct MemoryPool *memory_pool) {
     }
     else {
       memory_pool->slots[i].node.prev = &memory_pool->slots[i-1].node;
-    }      
+    }
   }
 }
 
@@ -108,7 +108,7 @@ int main() {
 
   lexical_buffer = (char *) malloc(buf_size * sizeof(char));
 
-  // now we have a dynamically defined buffer to store characters inside it.   
+  // now we have a dynamically defined buffer to store characters inside it.
 
   printf("Enter string: ");
   fgets(lexical_buffer, buf_size, stdin);
@@ -126,7 +126,7 @@ int main() {
      else {
        printf("Reached end of valid characters/whitespaces, breaking...\n");
        break;
-     }   
+     }
   }
 
   // this way we don't have to traverse the remaining empty buffer.
@@ -137,8 +137,8 @@ int main() {
   }
 
   // now we create the memory pool based on collect_size
-  
-  struct MemoryPool *memory_pool = malloc(sizeof(struct MemoryPool)); 
+
+  struct MemoryPool *memory_pool = malloc(sizeof(struct MemoryPool));
 
   if (memory_pool == NULL) {
     printf("Error in allocating memory for the allocator object! \n");
@@ -146,7 +146,7 @@ int main() {
   }
 
   memory_pool->pool_size = collect_size;
-  memory_pool->cursor_val = 0;  
+  memory_pool->cursor_val = 0;
   memory_pool->slots = calloc(memory_pool->pool_size, sizeof(struct PoolSlot));
 
   if (memory_pool->slots == NULL) {
@@ -161,8 +161,8 @@ int main() {
   // now it's time to put a node at each one of the slots and then connect the nodes.
 
   // 0 means unallocated, 1 means allocated.
- 
-  // now let's design an allocate method where the allocator automatically 
+
+  // now let's design an allocate method where the allocator automatically
   // it will be simple.
   // call allocate()
   // mark one free slot as USED.
