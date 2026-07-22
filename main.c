@@ -29,6 +29,7 @@ int main() {
   // to tackle this problem we need to use getchar() to remove exactly one char from the stdin stream, and this removes the leftover \n in the stdin stream.
   getchar();
 
+  buf_size+=1; // added an extra slot at the end.
   lexical_buffer = (char *) malloc(buf_size * sizeof(char));
 
   // now we have a dynamically defined buffer to store characters inside it.
@@ -82,8 +83,8 @@ int main() {
   // Did this so that the lexer becomes significantly faster as the CPU and cache love contiguous memory blocks.
 
     // now we create the memory pool based on collect_size
-  
-  struct MemoryPool *memory_pool = malloc(sizeof(struct MemoryPool)); 
+
+  struct MemoryPool *memory_pool = malloc(sizeof(struct MemoryPool));
 
   if (memory_pool == NULL) {
     printf("Error in allocating memory for the allocator object! \n");
@@ -91,7 +92,7 @@ int main() {
   }
 
   memory_pool->pool_size = collect_size;
-  memory_pool->cursor_val = 0;  
+  memory_pool->cursor_val = 0;
   memory_pool->slots = calloc(memory_pool->pool_size, sizeof(struct PoolSlot));
 
   if (memory_pool->slots == NULL) {
@@ -112,8 +113,8 @@ int main() {
   // now it's time to put a node at each one of the slots and then connect the nodes.
 
   // 0 means unallocated, 1 means allocated.
- 
-  // now let's design an allocate method where the allocator automatically 
+
+  // now let's design an allocate method where the allocator automatically
   // it will be simple.
   // call allocate()
   // mark one free slot as USED.
@@ -123,12 +124,16 @@ int main() {
   printf("Assigning single character tokens... \n");
   for (int i=0; i<memory_pool->pool_size; i++) {
     memory_pool->slots[i].node.token = assign_token(memory_pool->slots[i].node.c);
-  } 
+  }
 
   // assign large tokens
   printf("Assigning large tokens.... \n");
   assign_large_token(&memory_pool->slots[0].node);
-  printf("Large token assignment complete\n");
+  printf("Large token assignment complete.\n");
+
+  printf("Checking keyword type and assigning keywords...\n");
+  detect_keyword(&memory_pool->slots[0].node);
+  printf("Keyword type and keyword assignment complete.\n");
 
   // traversal
 
@@ -153,11 +158,10 @@ int main() {
   // pretty-print
 
   recognize(&memory_pool->slots[0].node);
-  
+
   free(memory_pool->slots);
   free(memory_pool);
   free(lexical_buffer);
-  
+
   return 0;
 }
-

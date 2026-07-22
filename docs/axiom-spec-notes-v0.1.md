@@ -113,14 +113,7 @@ real keyword -- see Section 6a).
     here so the idea isn't lost.
 
 ---
-## 4. Lexer implication: string literals (not yet implemented)
-
-Flagged during discussion, **not yet built**:
-
-- Currently, `"` tokenizes as `PUNCTUATION`, which the lexer treats as a
-  delimiter -- meaning `"Hello!"` would currently lex as multiple separate
-  lexemes (delimiter `"`, word `Hello`, punctuation `!`, delimiter `"`),
-  not one string literal.
+## 4. Lexer implication: string literals, comments, keywords (implemented)
   
 - String literals supported has been added, (check section 6c).
   
@@ -129,9 +122,10 @@ Flagged during discussion, **not yet built**:
   `scan_string_literal`), invoked when the outer walk hits a `"`.
   
 - Comments support has been added, (check section 6b).
-  
-- **Status: designed, not implemented.** Next concrete lexer task when
-  string support is picked up.
+
+- Keyword type and keyword detection support has been added. All keywords and their decisions as per sections 1 through 2b have been implemented into the lexer. As for section 3, the Pascal style string implementation will come in later stages of the compiler, as this is not the lexer's job.
+
+- **Status: implemented.**
 
 ---
 ## 5. Boolean type

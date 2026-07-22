@@ -1,6 +1,8 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<ctype.h>
+#include<string.h>
+#include "keywords.h"
 #include "lexer_token.h"
 #include "lexer_node.h"
 #include "lexer.h"
@@ -122,6 +124,112 @@ void print_large_token(enum LargeTOKEN token) {
   }
 }
 
+void print_keyword_type(enum KEYWORD_TYPE keyword_type) {
+  switch(keyword_type) {
+    case SYSTEM_RESERVED:
+      printf("KEYWORD TYPE: SYSTEM_RESERVED \n");
+      break;
+    case DATA_TYPE:
+      printf("KEYWORD TYPE: DATA_TYPE \n");
+      break;
+    case PURPOSELY_UNDEFINED_KEYWORD:
+      printf("KEYWORD TYPE: PURPOSELY_UNDEFINED_KEYWORD \n");
+      break;
+    case NOT_FOUND:
+      printf("KEYWORD TYPE: NOT_FOUND \n");
+      break;
+    case ILLEGAL_KEYWORD:
+      printf("KEYWORD TYPE: ILLEGAL_KEYWORD \n");
+      break;
+    default:
+      printf("KEYWORD TYPE: ILLEGAL_KEYWORD \n");
+      break;
+  }
+}
+
+void print_keyword(enum KEYWORD keyword) {
+  switch(keyword) {
+    case IF:
+      printf("KEYWORD: IF \n");
+      break;
+    case LET:
+      printf("KEYWORD: LET \n");
+      break;
+    case FOR:
+      printf("KEYWORD: FOR \n");
+      break;
+    case WHILE:
+      printf("KEYWORD: WHILE \n");
+      break;
+    case LOOP:
+      printf("KEYWORD: LOOP \n");
+      break;
+    case DO:
+      printf("KEYWORD: DO \n");
+      break;
+    case FN:
+      printf("KEYWORD: FN \n");
+      break;
+    case RET:
+      printf("KEYWORD: RET \n");
+      break;
+    case BRK:
+      printf("KEYWORD: BRK \n");
+      break;
+    case CONT:
+      printf("KEYWORD: CONT \n");
+      break;
+    case CONST:
+      printf("KEYWORD: CONST \n");
+      break;
+    case TRUE:
+      printf("KEYWORD: TRUE \n");
+      break;
+    case FALSE:
+      printf("KEYWORD: FALSE \n");
+      break;
+    case INT:
+      printf("KEYWORD: INT \n");
+      break;
+    case FLOAT:
+      printf("KEYWORD: FLOAT \n");
+      break;
+    case DLOAT:
+      printf("KEYWORD: DLOAT \n");
+      break;
+    case SINT:
+      printf("KEYWORD: SINT \n");
+      break;
+    case LINT:
+      printf("KEYWORD: LINT \n");
+      break;
+    case CHAR:
+      printf("KEYWORD: CHAR \n");
+      break;
+    case BOOL:
+      printf("KEYWORD: BOOL \n");
+      break;
+    case STR:
+      printf("KEYWORD: STR \n");
+      break;
+    case NONE:
+      printf("KEYWORD: NONE \n");
+      break;
+    case NULL_KEYWORD:
+      printf("KEYWORD: NULL_KEYWORD \n");
+      break;
+    case NOT_IMPLEMENTED:
+      printf("KEYWORD: NOT_IMPLEMENTED \n");
+      break;
+    case KEYWORD_COUNT:
+      printf("KEYWORD: KEYWORD_COUNT (should never appear on a real node) \n");
+      break;
+    default:
+      printf("KEYWORD: NOT_IMPLEMENTED \n");
+      break;
+  }
+}
+
 // time to represent the connection with tokens in a meaningful way now.
 // Yes it will be a bi-directional linked list (I forgot the proper industry term)
 
@@ -135,6 +243,150 @@ struct LexerNode {
   struct LexerNode* prev;
 };
 */
+
+enum KEYWORD_TYPE check_keyword_type(char* word) {
+    for (size_t i = 0; i < TOTAL_KEYWORDS; i++) {
+            if (strcmp(word, KEYWORD_TABLE[i].string_representation) == 0) {
+                return KEYWORD_TABLE[i].type;
+            }
+        }
+
+    return NOT_FOUND;
+}
+
+enum KEYWORD get_keyword_id(const char* word) {
+    // Loop through the existing table
+    for (size_t i = 0; i < TOTAL_KEYWORDS; i++) {
+        if (strcmp(word, KEYWORD_TABLE[i].string_representation) == 0) {
+            return KEYWORD_TABLE[i].id; // Return the exact enum ID (e.g., IF, INT)
+        }
+    }
+
+    // Fallback if the string is not a known language keyword
+    return NOT_IMPLEMENTED;
+}
+
+void detect_keyword(struct LexerNode* head) {
+    enum LargeTOKEN token = ILLEGAL;
+    struct LexerNode* temp = head;
+    struct LexerNode* lexeme_start = temp;
+    struct LexerNode* lexeme_start2 = lexeme_start;
+    struct LexerNode* lexeme_start3 = lexeme_start; // there is a reason for this third pointer.
+    int word_length = 0;
+    char* word_array = NULL;
+    int word_array_index = 0;
+    enum KEYWORD_TYPE keyword_type;
+    enum KEYWORD keyword = NULL_KEYWORD;
+
+    // so what I am trying to do here is firstly collect the total number characters that have the large token WORD
+    // then dynamically create a char array with length as the total number of chars + 1 extra character for a null terminator
+    // then concatenate all the characters in that array ending with the null terminator.
+    // then run a switch case check against keywords to detect if it as a keyword or not.
+
+    while (temp!=NULL) {
+        if (temp->largetoken == DELIMITER) {
+          // find the first DELIMITER.
+          while(lexeme_start!=temp) {
+              if (lexeme_start->largetoken == WORD) {
+                  word_length+=1;
+              }
+              else {
+                  break; // don't consider looping if the first char has some large token other than WORD.
+              }
+              lexeme_start = lexeme_start->next;
+          }
+          // before we proceed to the next lexeme
+          if (word_length>0) {
+              word_length += 1; // one extra slot for the null terminator
+              word_array = malloc(word_length * sizeof(char)); // initialize the array.
+              while(lexeme_start2!=lexeme_start) { // technically the same as lexeme_start2 != temp
+                  word_array[word_array_index] = lexeme_start2->c;
+                  word_array_index+=1;
+                  lexeme_start2 = lexeme_start2->next;
+              }
+              word_array[word_array_index] = '\0'; // terminate the string.
+
+              // check the keyword type
+              keyword_type = check_keyword_type(word_array);
+              if (keyword_type!=NOT_FOUND) {
+                  // check the actual keyword.
+                  keyword = get_keyword_id(word_array);
+              }
+
+              // great, now that we have the correct keyword type and the keyword to assign to, let's run one final loop.
+              while(lexeme_start3!=lexeme_start) {// again, technically the same as lexeme_start3 != temp
+                  lexeme_start3->keyword_type = keyword_type;
+                  lexeme_start3->keyword = keyword;
+
+                  lexeme_start3 = lexeme_start3->next;
+              }
+
+              free(word_array);
+          }
+
+          word_array = NULL;
+          word_array_index = 0;
+          word_length = 0;
+          temp = temp->next; // push past the delimiter.
+          lexeme_start = temp; // set to the start of the next lexeme.
+          lexeme_start2 = lexeme_start;
+          lexeme_start3 = lexeme_start;
+          keyword_type = NOT_FOUND;
+          keyword = NOT_IMPLEMENTED;
+          continue;
+        }
+        temp = temp->next;
+    }
+
+    // same edge case as assign_large_token, what if the last/only lexeme ends without any delimiter?
+    // lexeme_start is still sitting at the start of that lexeme.
+
+    if (lexeme_start!=NULL) {
+        while(lexeme_start!=temp) {
+            if (lexeme_start->largetoken == WORD) {
+                word_length+=1;
+            }
+            else {
+                break; // don't consider looping if the first char has some large token other than WORD.
+            }
+            lexeme_start = lexeme_start->next;
+        }
+        // before we proceed to the next lexeme
+        if (word_length>0) {
+            word_length += 1; // one extra slot for the null terminator
+            word_array = malloc(word_length * sizeof(char)); // initialize the array.
+            while(lexeme_start2!=lexeme_start) { // technically the same as lexeme_start2 != temp
+                word_array[word_array_index] = lexeme_start2->c;
+                word_array_index+=1;
+                lexeme_start2 = lexeme_start2->next;
+            }
+            word_array[word_array_index] = '\0'; // terminate the string.
+
+            // check the keyword type
+            keyword_type = check_keyword_type(word_array);
+            if (keyword_type!=NOT_FOUND) {
+                // check the actual keyword.
+                keyword = get_keyword_id(word_array);
+            }
+
+            // great, now that we have the correct keyword type and the keyword to assign to, let's run one final loop.
+            while(lexeme_start3!=lexeme_start) {// again, technically the same as lexeme_start3 != temp
+                lexeme_start3->keyword_type = keyword_type;
+                lexeme_start3->keyword = keyword;
+
+                lexeme_start3 = lexeme_start3->next;
+            }
+
+            free(word_array);
+        }
+
+        word_array = NULL;
+        word_array_index = 0;
+        word_length = 0;
+        keyword_type = NOT_FOUND;
+        keyword = NOT_IMPLEMENTED;
+    }
+}
 
 void assign_large_token(struct LexerNode* head) {
    enum LargeTOKEN token = ILLEGAL;
@@ -211,7 +463,7 @@ void assign_large_token(struct LexerNode* head) {
       continue; // skip the rest of this iteration; temp already advanced
     }
 
-    
+
     // string literal detection (" ... ")
     if (temp->token == PUNCTUATION && temp->c == '"') {
 
@@ -393,7 +645,11 @@ void recognize(struct LexerNode* head) {
             if (lexeme_start->next == temp) {
               printf("\t\t --> \t\t");
               print_large_token(lexeme_start->largetoken); // this is automatically print a newline too.
-             }
+              printf("\t\t --> \t\t");
+              print_keyword_type(lexeme_start->keyword_type);
+              printf("\t\t --> \t\t");
+              print_keyword(lexeme_start->keyword);
+            }
             lexeme_start = lexeme_start->next;
           }
           // now we print the delimiter as well.
@@ -415,7 +671,6 @@ void recognize(struct LexerNode* head) {
 
     // applying same edge case as assign_large_token here too.
 
-
     if (lexeme_start!=NULL) {
       while (lexeme_start!=NULL) {
         printf("%c", lexeme_start->c); // keep printing characters without newline.
@@ -423,11 +678,16 @@ void recognize(struct LexerNode* head) {
         if (lexeme_start->next == temp) {
           printf("\t\t --> \t\t");
           print_large_token(lexeme_start->largetoken); // this is automatically print a newline too.
+          printf("\t\t --> \t\t");
+          print_keyword_type(lexeme_start->keyword_type);
+          printf("\t\t --> \t\t");
+          print_keyword(lexeme_start->keyword);
         }
           lexeme_start = lexeme_start->next;
         }
       }
   }
+
 
 }
 
