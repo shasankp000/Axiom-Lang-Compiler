@@ -151,12 +151,16 @@ enum KEYWORD {
   INT, FLOAT, DLOAT, SINT, LINT, CHAR, BOOL, STR,
   NONE,          // real Axiom keyword (null/absence) -- see Section 2a
   NULL_KEYWORD,  // internal sentinel only -- see Section 6a
+  NOT_IMPLEMENTED, // a keyword that's currently not implemented in the language
+  KEYWORD_COUNT,  // sentinel: a tracker for the total number of keywords currently in the language, referred to in keywords.c
 };
 
 enum KEYWORD_TYPE {
   SYSTEM_RESERVED,             // control/declaration keyword
   DATA_TYPE,                   // primitive or composite type keyword
   PURPOSELY_UNDEFINED_KEYWORD, // sentinel: no keyword assigned/applicable
+  NOT_FOUND                    // sentinel: keyword type that's not implemented.
+  ILLEGAL_KEYWORD              // sentinel: INVALID/MALFORMED keyword
 };
 ```
 
