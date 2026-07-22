@@ -91,9 +91,6 @@ void print_token(enum TOKEN token) {
 
 void print_large_token(enum LargeTOKEN token) {
   switch(token) {
-    case WORD:
-      printf("LARGE TOKEN: WORD \n");
-      break;
     case IDENTIFIER:
       printf("LARGE TOKEN: IDENTIFER \n");
       break;
@@ -117,6 +114,24 @@ void print_large_token(enum LargeTOKEN token) {
       break;
     case COMMENT:
       printf("LARGE TOKEN: COMMENT \n");
+      break;
+    case LEFT_PAREN:
+      printf("LARGE TOKEN: LEFT_PAREN \n");
+      break;
+    case RIGHT_PAREN:
+      printf("LARGE TOKEN: RIGHT_PAREN \n");
+      break;
+    case LEFT_BRACE:
+      printf("LARGE TOKEN: LEFT_BRACE \n");
+      break;
+    case RIGHT_BRACE:
+      printf("LARGE TOKEN: RIGHT_BRACE \n");
+      break;
+    case COLON:
+      printf("LARGE TOKEN: COLON \n");
+      break;
+    case SEMICOLON:
+      printf("LARGE TOKEN: SEMICOLON \n");
       break;
     default:
       printf("LARGE TOKEN: ILLEGAL \n");
@@ -188,21 +203,42 @@ void print_keyword(enum KEYWORD keyword) {
     case FALSE:
       printf("KEYWORD: FALSE \n");
       break;
-    case INT:
-      printf("KEYWORD: INT \n");
+    case INT_8:
+      printf("KEYWORD: INT_8 \n");
       break;
-    case FLOAT:
-      printf("KEYWORD: FLOAT \n");
+    case INT_16:
+      printf("KEYWORD: INT_16 \n");
       break;
-    case DLOAT:
-      printf("KEYWORD: DLOAT \n");
+    case INT_32:
+      printf("KEYWORD: INT_32 \n");
       break;
-    case SINT:
-      printf("KEYWORD: SINT \n");
+    case INT_64:
+      printf("KEYWORD: INT_64 \n");
       break;
-    case LINT:
-      printf("KEYWORD: LINT \n");
+    case INT_128:
+      printf("KEYWORD: INT_128 \n");
       break;
+    case INT_512:
+      printf("KEYWORD: INT_512 \n");
+      break;
+    case FLOAT_8:
+        printf("KEYWORD: FLOAT_8 \n");
+        break;
+    case FLOAT_16:
+        printf("KEYWORD: FLOAT_16 \n");
+        break;
+    case FLOAT_32:
+        printf("KEYWORD: FLOAT_32 \n");
+        break;
+    case FLOAT_64:
+        printf("KEYWORD: FLOAT_64 \n");
+        break;
+    case FLOAT_128:
+        printf("KEYWORD: FLOAT_128 \n");
+        break;
+    case FLOAT_512:
+        printf("KEYWORD: FLOAT_512 \n");
+        break;
     case CHAR:
       printf("KEYWORD: CHAR \n");
       break;
@@ -275,7 +311,7 @@ void detect_keyword(struct LexerNode* head) {
     int word_length = 0;
     char* word_array = NULL;
     int word_array_index = 0;
-    enum KEYWORD_TYPE keyword_type;
+    enum KEYWORD_TYPE keyword_type = NOT_FOUND;
     enum KEYWORD keyword = NULL_KEYWORD;
 
     // so what I am trying to do here is firstly collect the total number characters that have the large token WORD
@@ -287,7 +323,7 @@ void detect_keyword(struct LexerNode* head) {
         if (temp->largetoken == DELIMITER) {
           // find the first DELIMITER.
           while(lexeme_start!=temp) {
-              if (lexeme_start->largetoken == WORD) {
+              if (lexeme_start->largetoken == IDENTIFIER) {
                   word_length+=1;
               }
               else {
@@ -318,6 +354,13 @@ void detect_keyword(struct LexerNode* head) {
                   lexeme_start3->keyword_type = keyword_type;
                   lexeme_start3->keyword = keyword;
 
+                  // then this piece of error correction code here specifically IDENTIFIERS.
+                  if (lexeme_start3->largetoken == IDENTIFIER) {
+                      if (keyword_type != NOT_FOUND) {
+                          lexeme_start3->largetoken = KEYWORD;
+                      }
+                  }
+
                   lexeme_start3 = lexeme_start3->next;
               }
 
@@ -343,7 +386,7 @@ void detect_keyword(struct LexerNode* head) {
 
     if (lexeme_start!=NULL) {
         while(lexeme_start!=temp) {
-            if (lexeme_start->largetoken == WORD) {
+            if (lexeme_start->largetoken == IDENTIFIER) {
                 word_length+=1;
             }
             else {
@@ -373,6 +416,13 @@ void detect_keyword(struct LexerNode* head) {
             while(lexeme_start3!=lexeme_start) {// again, technically the same as lexeme_start3 != temp
                 lexeme_start3->keyword_type = keyword_type;
                 lexeme_start3->keyword = keyword;
+
+                // then this piece of error correction code here specifically for IDENTIFIERS.
+                if (lexeme_start3->largetoken == IDENTIFIER) {
+                    if (keyword_type != NOT_FOUND) {
+                        lexeme_start3->largetoken = KEYWORD;
+                    }
+                }
 
                 lexeme_start3 = lexeme_start3->next;
             }
@@ -405,8 +455,8 @@ void assign_large_token(struct LexerNode* head) {
    int string_literal_end_detected = 0;
    lexeme_start = temp;
 
-  printf("Before while loop....\n");
-  while (temp!=NULL) {
+   printf("Before while loop....\n");
+   while (temp!=NULL) {
 
     // for ILLEGAL identifiers:
     if (lexeme_start->token == DIGIT) {
@@ -523,20 +573,43 @@ void assign_large_token(struct LexerNode* head) {
 
     if (temp->token == WHITESPACE || temp->token == PUNCTUATION || temp->token == OPERATOR) {
       // delimiter reached.
-       temp->largetoken = DELIMITER;
+
+      if (temp->token == PUNCTUATION && temp->c == '(') {
+          temp->largetoken = LEFT_PAREN;
+      }
+
+      else if (temp->token == PUNCTUATION && temp->c == ')') {
+          temp->largetoken = RIGHT_PAREN;
+      }
+
+      else if (temp->token == PUNCTUATION && temp->c == '{') {
+          temp->largetoken = LEFT_BRACE;
+      }
+
+      else if (temp->token == PUNCTUATION && temp->c == '}') {
+          temp->largetoken = RIGHT_BRACE;
+      }
+
+      else if (temp->token == PUNCTUATION && temp->c == ':') {
+          temp->largetoken = COLON;
+      }
+
+      else if (temp->token == PUNCTUATION && temp->c == ';') {
+          temp->largetoken = SEMICOLON;
+      }
+
+      else {
+          temp->largetoken = DELIMITER;
+      }
 
       while(lexeme_start!=temp) {
-
-        if (digit_occurrence > 0 && alphabet_occurence > 0) {
+        if (alphabet_occurence > 0) {
             if (first_char_is_digit) {
               lexeme_start->largetoken = ILLEGAL;
             }
             else {
               lexeme_start->largetoken = IDENTIFIER;
             }
-        }
-        else if (alphabet_occurence > 0 && digit_occurrence==0) {
-            lexeme_start->largetoken = WORD;
         }
         else if (digit_occurrence > 0 && alphabet_occurence==0) {
             lexeme_start->largetoken = NUMBER;
@@ -548,16 +621,13 @@ void assign_large_token(struct LexerNode* head) {
         if (lexeme_start->next == temp) {
           // right at the end of lexeme.
 
-          if (digit_occurrence > 0 && alphabet_occurence > 0) {
+          if (alphabet_occurence > 0) {
             if (first_char_is_digit) {
               lexeme_start->largetoken = ILLEGAL;
             }
             else {
               lexeme_start->largetoken = IDENTIFIER;
             }
-          }
-          else if (alphabet_occurence > 0 && digit_occurrence==0) {
-            lexeme_start->largetoken = WORD;
           }
           else if (digit_occurrence > 0 && alphabet_occurence==0) {
             lexeme_start->largetoken = NUMBER;
@@ -586,30 +656,61 @@ void assign_large_token(struct LexerNode* head) {
   // All we need to do is to keep walk from lexeme_start to NULL, and tag all LexerNodes along the way.
   // This is a one-time cleanup after the main loop has already run, and it already has logged if the last lexeme is an IDENTIFIER or WORD, via the counter variable.
 
-if (lexeme_start!=NULL) {
-  while (lexeme_start!=NULL) {
-    if (digit_occurrence > 0 && alphabet_occurence > 0) {
-      if (first_char_is_digit) {
-        lexeme_start->largetoken = ILLEGAL;
+  if (lexeme_start != NULL) {
+      while (lexeme_start != NULL) {
+
+          if (lexeme_start->token == PUNCTUATION) {
+              switch (lexeme_start->c) {
+                  case '(':
+                      lexeme_start->largetoken = LEFT_PAREN;
+                      break;
+
+                  case ')':
+                      lexeme_start->largetoken = RIGHT_PAREN;
+                      break;
+
+                  case '{':
+                      lexeme_start->largetoken = LEFT_BRACE;
+                      break;
+
+                  case '}':
+                      lexeme_start->largetoken = RIGHT_BRACE;
+                      break;
+
+                  case ':':
+                      lexeme_start->largetoken = COLON;
+                      break;
+
+                  case ';':
+                      lexeme_start->largetoken = SEMICOLON;
+                      break;
+
+                  default:
+                      lexeme_start->largetoken = DELIMITER;
+                      break;
+              }
+          }
+          else if (alphabet_occurence > 0) {
+              if (first_char_is_digit) {
+                  lexeme_start->largetoken = ILLEGAL;
+              }
+              else {
+                  lexeme_start->largetoken = IDENTIFIER;
+              }
+          }
+          else if (digit_occurrence > 0) {
+              lexeme_start->largetoken = NUMBER;
+          }
+          else {
+              lexeme_start->largetoken = ILLEGAL;
+          }
+
+          lexeme_start = lexeme_start->next;
       }
-      else {
-        lexeme_start->largetoken = IDENTIFIER;
-      }
-    }
-    else if (alphabet_occurence > 0 && digit_occurrence==0) {
-      lexeme_start->largetoken = WORD;
-    }
-    else if (digit_occurrence > 0 && alphabet_occurence==0) {
-      lexeme_start->largetoken = NUMBER;
-    }
-    else {
-      lexeme_start->largetoken = ILLEGAL;
-    }
-      lexeme_start = lexeme_start->next;
-    }
-    digit_occurrence = 0; // not needed at this juncture, but still.
-    alphabet_occurence = 0;
-    first_char_is_digit = 0;
+
+      digit_occurrence = 0;
+      alphabet_occurence = 0;
+      first_char_is_digit = 0;
   }
 }
 
