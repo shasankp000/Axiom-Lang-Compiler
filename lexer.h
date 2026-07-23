@@ -3,7 +3,7 @@
 #include "lexer_token.h"
 #include "lexer_node.h"
 
-enum TOKEN assign_token(char input);
+void assign_token(struct LexerNode* head);
 void assign_large_token(struct LexerNode* head);
 void print_token(enum TOKEN token);
 void print_large_token(enum LargeTOKEN token);

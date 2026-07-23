@@ -31,7 +31,8 @@ enum LargeTOKEN {
 };
 */
 
-enum TOKEN assign_token(char input){
+void assign_token(struct LexerNode* head){
+    struct LexerNode* temp = head;
 
 // the biggest problem in this dang function was to figure out
 // how do I pass something like a generic input type?
@@ -40,27 +41,96 @@ enum TOKEN assign_token(char input){
 // okay, it just reads input chars, not anything truly generic.
 // just changing input type to char input does the job here.
 
-  enum TOKEN token = INVALID;
+  printf("before while loop \n");
+  while (temp != NULL) {
+      if ((isalpha(temp->c))) {
+        printf("Assinging ALPHABET \n");
+        temp->token = ALPHABET;
+      }
+      if (isdigit(temp->c)) {
+          printf("Assinging DIGIT \n");temp->token = DIGIT;
+      }
+      if (ispunct(temp->c)) {
+        printf("Assinging PUNCTUATION/OPERATOR \n");
+        switch(temp->c) {
+            case '+':
+                if (temp->next->c == '=') {
+                    temp->token = OPERATOR;
+                }
+                temp->token = OPERATOR;
+                break;
+            case '-':
+                if (temp->next->c == '=') {
+                    temp->token = OPERATOR;
+                }
+                temp->token = OPERATOR;
+                break;
+            case '/':
+                if (temp->next->c == '=') {
+                    temp->token = OPERATOR;
+                }
+                temp->token = OPERATOR;
+                break;
+            case '*':
+                if (temp->next->c == '=') {
+                    temp->token = OPERATOR;
+                }
+                temp->token = OPERATOR;
+                break;
+            case '%':
+                if (temp->next->c == '=') {
+                    temp->token = OPERATOR;
+                }
+                temp->token = OPERATOR;
+                break;
+            case '<':
+                if (temp->next->c == '=') {
+                    temp->token = OPERATOR;
+                }
+                break;
+            case '>':
+                if (temp->next->c == '=') {
+                    temp->token = OPERATOR;
+                }
+                temp->token = OPERATOR;
+                break;
+            case '=':
+                if (temp->next->c == '=') {
+                    temp->token = OPERATOR;
+                }
+                temp->token = OPERATOR;
+                break;
+            case '!':
+                if (temp->next->c == '=') {
+                    temp->token = OPERATOR;
+                }
+                if (temp->next->c == '&') {
+                    temp->token = OPERATOR;
+                }
+                temp->token = OPERATOR;
+                break;
+            case '&':
+               if (temp->next->c == '&') {
+                   temp->token = OPERATOR;
+               }
+                break;
+            case '|':
+               if (temp->next->c == '|') {
+                   temp->token = OPERATOR;
+                }
+                break;
+            default:
+                temp->token = PUNCTUATION;
+                break;
+        }
+      }
 
-  if ((isalpha(input))) {
-    token = ALPHABET;
-  }
-  if (isdigit(input)) {
-    token = DIGIT;
-  }
-  if (ispunct(input)) {
-    token = PUNCTUATION;
-  }
-  if (ispunct(input)) {
-    if (input == '+' || input == '-' || input == '/' || input == '*') {
-      token = OPERATOR;
-    }
-  }
-  if (isspace(input)) {
-    token = WHITESPACE;
-  }
+      if (isspace(temp->c)) {
+        temp->token = WHITESPACE;
+      }
 
-  return token;
+      temp = temp->next;
+  }
 }
 
 void print_token(enum TOKEN token) {

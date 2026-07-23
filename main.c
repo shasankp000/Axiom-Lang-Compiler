@@ -122,9 +122,8 @@ int main() {
 
   // assign single-character tokens
   printf("Assigning single character tokens... \n");
-  for (int i=0; i<memory_pool->pool_size; i++) {
-    memory_pool->slots[i].node.token = assign_token(memory_pool->slots[i].node.c);
-  }
+  assign_token(&memory_pool->slots[0].node);
+
 
   // assign large tokens
   printf("Assigning large tokens.... \n");
